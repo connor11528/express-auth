@@ -1,0 +1,18 @@
+doctype 5
+html
+	head
+		title node chat application
+		script(src='public/jquery-1.10.2.js')
+		script(src='public/bootstrap.js')
+		script(src='/socket.io/socket.io.js')
+		script(src='script.js')
+	body
+		div.container
+			header
+				h1 a chat app with node and socket.io
+			input(type='text')#pseudoInput
+			button#pseudoSet Set Pseudo
+			div#chatEntries
+			div#chatControls
+				input(type='text')#messageInput
+				button#submit Send
