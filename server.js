@@ -1,10 +1,12 @@
 var express = require('express');
-var jade = require('jade');
+var app = express();
 
-var app = express.createServer();
+var jade = require('jade');
+var http = require('http');
+var server = http.createServer(app);
 
 // chain on express server to listen for connections from same address and port
-var io = require('socket.io').listen(app);
+var io = require('socket.io').listen(server);
 
 
 app.set('views', __dirname + '/views'); // serve templates from '/views'
@@ -26,7 +28,7 @@ io.sockets.on('connection', function(socket){
 	
 	socket.on('setPseudo', function(data){  // takes the data from client
 		// assign a variable to the socket
-		socker.set('pseudo', data);
+		socket.set('pseudo', data);
 	});
 	
 	// message event
@@ -39,4 +41,5 @@ io.sockets.on('connection', function(socket){
 	});
 	
 });
-app.listen(3000);
+
+server.listen(3000);
