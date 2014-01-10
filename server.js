@@ -1,45 +1,41 @@
-var express = require('express');
-var app = express();
+// server.js
 
-var jade = require('jade');
-var http = require('http');
-var server = http.createServer(app);
+// set up ======================================================================
+// get all the tools we need
+var express  = require('express');
+var app      = express();
+var port     = process.env.PORT || 8080;
+var mongoose = require('mongoose');
+var passport = require('passport');
+var flash 	 = require('connect-flash');
 
-// chain on express server to listen for connections from same address and port
-var io = require('socket.io').listen(server);
+var configDB = require('./config/database.js');
 
+// configuration ===============================================================
+mongoose.connect(configDB.url); // connect to our database
 
-app.set('views', __dirname + '/views'); // serve templates from '/views'
-app.set('view engine', 'jade');
-app.set("view options", { layout: false });  // disable express layouts
+require('./config/passport')(passport); // pass passport for configuration
 
-// serve public folder to the client
 app.configure(function() {
-	app.use(express.static(__dirname + '/public'));
+
+	// set up our express application
+	app.use(express.logger('dev')); // log every request to the console
+	app.use(express.cookieParser()); // read cookies (needed for auth)
+	app.use(express.bodyParser()); // get information from html forms
+
+	app.set('view engine', 'ejs'); // set up ejs for templating
+
+	// required for passport
+	app.use(express.session({ secret: 'ilovescotchscotchyscotchscotch' })); // session secret
+	app.use(passport.initialize());
+	app.use(passport.session()); // persistent login sessions
+	app.use(flash()); // use connect-flash for flash messages stored in session
+
 });
 
-app.get('/', function(req, res){
-  res.render('home.jade'); // serve home.jade file
-});
+// routes ======================================================================
+require('./app/routes.js')(app, passport); // load our routes and pass in our app and fully configured passport
 
-// fired when client tries to connect to the server
-// socket.io creates a new socket for them
-io.sockets.on('connection', function(socket){
-	
-	socket.on('setPseudo', function(data){  // takes the data from client
-		// assign a variable to the socket
-		socket.set('pseudo', data);
-	});
-	
-	// message event
-	socket.on('message', function(message){
-		socket.get('pseudo', function(error, name){
-			var data = { 'message' : message, pseudo: name };
-			socket.broadcast.emit('message', data);
-			console.log("user " + name + " sent: " + message);
-		})
-	});
-	
-});
-
-server.listen(3000);
+// launch ======================================================================
+app.listen(port);
+console.log('The magic happens on port ' + port);

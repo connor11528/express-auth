@@ -1,8 +1,8 @@
 {
-  "name": "node_chatapp",
+  "name": "express-auth",
   "version": "0.0.0",
   "description": "a chat application using express, jade, socket.io and node.js",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -11,6 +11,14 @@
   "dependencies": {
     "socket.io": "~0.9.16",
     "express": "~3.4.6",
-    "jade": "~0.35.0"
+    "ejs" : "~0.8.5", 
+    "mongoose" : "~3.8.1", 			
+    "passport" : "~0.1.17", 		
+    "passport-local" : "~0.1.6", 	
+    "passport-facebook" : "~1.0.2", 
+    "passport-twitter" : "~1.0.2", 	
+    "passport-google-oauth" : "~0.1.5",
+    "connect-flash" : "~0.1.1", 	
+    "bcrypt-nodejs" : "latest"
   }
 }
