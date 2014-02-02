@@ -4,17 +4,20 @@
 // get all the tools we need
 var express  = require('express');
 var app      = express();
-var port     = process.env.PORT || 8080;
+var port     = process.env.PORT || 3000;
 var mongoose = require('mongoose');
 var passport = require('passport');
 var flash 	 = require('connect-flash');
+var env = process.env.NODE_ENV || 'development';
 
-var configDB = require('./config/database.js');
+var configDB = require('./config/database')[env];
 
 // configuration ===============================================================
-mongoose.connect(configDB.url); // connect to our database
+mongoose.connect(configDB.db); // connect to our database
 
 require('./config/passport')(passport); // pass passport for configuration
+
+// var auth = config middlewares auth
 
 app.configure(function() {
 
@@ -34,8 +37,8 @@ app.configure(function() {
 });
 
 // routes ======================================================================
-require('./app/routes.js')(app, passport); // load our routes and pass in our app and fully configured passport
+require('./config/routes')(app, passport); // load our routes and pass in our app and fully configured passport
 
 // launch ======================================================================
 app.listen(port);
-console.log('The magic happens on port ' + port);
+console.log('Server started on port ' + port);

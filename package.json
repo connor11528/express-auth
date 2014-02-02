@@ -1,7 +1,7 @@
 {
   "name": "express-auth",
   "version": "0.0.0",
-  "description": "a chat application using express, jade, socket.io and node.js",
+  "description": "login using express",
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -9,7 +9,6 @@
   "author": "Connor James Leech",
   "license": "BSD-2-Clause",
   "dependencies": {
-    "socket.io": "~0.9.16",
     "express": "~3.4.6",
     "ejs" : "~0.8.5", 
     "mongoose" : "~3.8.1", 			
