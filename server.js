@@ -2,42 +2,49 @@
 
 // set up ======================================================================
 // get all the tools we need
-var express  = require('express');
-var app      = express();
-var port     = process.env.PORT || 3000;
-var mongoose = require('mongoose');
-var passport = require('passport');
-var flash 	 = require('connect-flash');
-var env = process.env.NODE_ENV || 'development';
-
-var configDB = require('./config/database')[env];
+var express  = require('express'),
+	path = require('path'),
+	app = express(),
+	port = process.env.PORT || 3000,
+	mongoose = require('mongoose'),
+	passport = require('passport'),
+	flash = require('connect-flash'),
+	env = process.env.NODE_ENV || 'development',
+	configDB = require('./config/database')[env];
 
 // configuration ===============================================================
-mongoose.connect(configDB.db); // connect to our database
+// database config
+mongoose.connect(configDB.db);
 
-require('./config/passport')(passport); // pass passport for configuration
+// passport config
+require('./config/passport')(passport);
 
-// var auth = config middlewares auth
-
+// express config
 app.configure(function() {
-
-	// set up our express application
+	app.use(express.static(path.join(__dirname, 'public')));
 	app.use(express.logger('dev')); // log every request to the console
 	app.use(express.cookieParser()); // read cookies (needed for auth)
 	app.use(express.bodyParser()); // get information from html forms
 
-	app.set('view engine', 'ejs'); // set up ejs for templating
+	app.use(express.favicon(path.join(__dirname, "/public/favicon.ico"))); // not working :(
+	app.set('view engine', 'ejs');
+
 
 	// required for passport
 	app.use(express.session({ secret: 'ilovescotchscotchyscotchscotch' })); // session secret
 	app.use(passport.initialize());
 	app.use(passport.session()); // persistent login sessions
 	app.use(flash()); // use connect-flash for flash messages stored in session
-
 });
 
-// routes ======================================================================
+// ROUTES ======================================================================
+// require('./config/api_routes')(app); // routes for a REST API that doesn't exist yet..
 require('./config/routes')(app, passport); // load our routes and pass in our app and fully configured passport
+
+// Everything else handled by Angular
+app.get('/*', function(req, res) {
+	res.sendfile('./public/index.html');
+});
 
 // launch ======================================================================
 app.listen(port);
