@@ -1,6 +1,4 @@
-'use strict';
 
-// init
 var app = angular.module('express-auth', [
   'ngCookies',
   'ngResource',

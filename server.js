@@ -1,45 +1,38 @@
-// server.js
 
-// set up ======================================================================
-// get all the tools we need
 var express  = require('express'),
 	app = express(),
+	engine = require('ejs-mate'),
 	mongoose = require('mongoose'),
 	path = require('path'),
 	passport = require('passport'),
 	env = process.env.NODE_ENV || 'development',
-	envConfig = require('./server/config/env')[env];
+	envConfig = require('./config/env')[env],
+	flash = require('connect-flash'),
+	bodyParser = require('body-parser'),
+	session = require('express-session'),
+	cookieParser = require('cookie-parser');
 
-// configuration ===============================================================
 // database config
 mongoose.connect(envConfig.db);
 
 // passport config
-require('./server/config/passport')(passport);
+require('./config/passport')(passport);
 
 // express config
-app.configure(function() {
-	app.use(express.static(path.join(__dirname, 'public')));
-	app.use(express.logger('dev')); // log every request to the console
-	app.use(express.cookieParser()); // read cookies (needed for auth)
-	app.use(express.bodyParser()); // get information from html forms
+app.use(cookieParser());
+app.use(bodyParser.json());
 
-	// required for passport
-	app.use(express.session({ secret: 'ilovescotchscotchyscotchscotch' })); // session secret
-	app.use(passport.initialize());
-	app.use(passport.session()); // persistent login sessions
-});
+app.engine('ejs', engine);
+app.set('view engine', 'ejs');
 
-// ROUTES ======================================================================
-// require('./config/api_routes')(app); // routes for a REST API that doesn't exist yet..
-require('./server/config/routes')(app, passport); // load our routes and pass in our app and fully configured passport
+// required for passport
+app.use(session({ secret: 'thisisverys3crett' }));
+app.use(passport.initialize());
+app.use(passport.session());
+app.use(flash());
 
-// Everything else handled by Angular
-app.get('/*', function(req, res) {
-	res.sendfile('./public/index.html');
-});
+require('./server/routes')(app, passport);
 
-// launch ======================================================================
 app.listen(envConfig.port, function(){
 	console.log('Server started on port ' + envConfig.port);
 })
