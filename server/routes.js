@@ -36,6 +36,43 @@ module.exports = function(app, passport){
 		res.redirect('/');
 	});
 
+	// Log in with Facebook
+	app.get('/auth/facebook', passport.authenticate('facebook', { scope: 'email' }));
+
+	app.get('/auth/facebook/callback',
+		passport.authenticate('facebook', {
+			successRedirect: '/profile',
+			failureRedirect: '/'
+		}));
+
+	// Connect facebook account (already logged in)
+	app.get('/connect/facebook', passport.authorize('facebook', { scope: 'email' }));
+
+	app.get('/connect/facebook/callback', passport.authorize('facebook', {
+		successRedirect: '/profile',
+		failureRedirect: '/'
+	}));
+
+	// unlink facebook
+	app.get('/unlink/facebook', function(req, res) {
+        var user = req.user;
+        user.facebook.token = undefined;
+        user.save(function(err) {
+            res.redirect('/profile');
+        });
+    });
+
+	// unlink local
+    app.get('/unlink/local', function(req, res) {
+        var user = req.user;
+        user.local.email = undefined;
+        user.local.password = undefined;
+        user.save(function(err) {
+            res.redirect('/profile');
+        });
+    });
+
+
 };
 
 function isLoggedIn(req, res, next){
