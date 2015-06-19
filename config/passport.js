@@ -1,6 +1,7 @@
 
 var LocalStrategy = require('passport-local').Strategy;
 var FacebookStrategy = require('passport-facebook').Strategy;
+var SpotifyStrategy = require('passport-spotify').Strategy;
 var User = require('../server/models/user');
 
 var configAuth = require('./auth');
@@ -127,8 +128,6 @@ module.exports = function(passport) {
                     // if no user found create them
                     var newUser = new User();
 
-                    console.log('creating a new user')
-
                     newUser.facebook.id = profile.id;
                     newUser.facebook.token = token;
                     newUser.facebook.name = profile.name.givenName + ' ' + profile.name.familyName;
@@ -155,13 +154,88 @@ module.exports = function(passport) {
                 if(err) throw err;
 
                 return done(null, user);
-            })
+            });
         }
-    }))
+    }));
+
+    
+    // Spotify
+    passport.use(new SpotifyStrategy({
+        clientID: configAuth.spotifyAuth.clientID,
+        clientSecret: configAuth.spotifyAuth.clientSecret,
+        callbackURL: configAuth.spotifyAuth.callbackURL,
+        passReqToCallback: true
+    }, function(req, token, refreshToken, profile, done) {
+
+        // user is not logged in
+        if(!req.user){
+            User.findOne({ 'spotify.id': profile.id }, function(err, user){
+                if(err) return done(err);
+
+                
+                if(user){
+                    // previously unlinked their spotify,
+                    // now they want to log in with spotify again
+                    // readd their credentials
+                    if (!user.spotify.token) {
+
+                        user.spotify.id = profile.id;
+                        user.spotify.token = token;
+                        user.spotify.name  = profile.displayName;
+                        user.spotify.username = profile.username;
+                        user.spotify.email = profile.emails[0].value;
+
+                        user.save(function(err) {
+                            if (err)
+                                throw err;
+                            return done(null, user);
+                        });
+                    } else {
+
+                        // user found, return that user
+                        return done(null, user);
+                    }
+
+                } else {
+                    // first time logging in, create new User
+                    var newUser = new User();
+
+                    newUser.spotify.id = profile.id;
+                    newUser.spotify.token = token;
+                    newUser.spotify.name  = profile.displayName;
+                    newUser.spotify.username = profile.username;
+                    newUser.spotify.email = profile.emails[0].value;
+
+                    newUser.save(function(err){
+                        if(err) throw err;
+
+                        return done(null, newUser);
+                    });
+
+                }
+
+            });
+
+        } else {
+            // user already exists and is logged in (link accounts)
+            var user = req.user;
+
+            user.spotify.id = profile.id;
+            user.spotify.token = token;
+            user.spotify.name  = profile.displayName;
+            user.spotify.username = profile.username;
+            user.spotify.email = profile.emails[0].value;
 
 
+            user.save(function(err){
+                if(err) throw err;
 
+                return done(null, user);
+            });
 
+        }
+
+    }));
 
 
 

@@ -43,6 +43,25 @@
             <% } %>
         </div>
     </div>
+    <div class='col-sm-6'>
+        <div class='well'>
+            <h3 class='text-success'>Spotify</h3>
+
+            <% if(user.spotify.token){ %>
+                <p>
+                    <strong>id</strong>: <%= user.spotify.id %><br>
+                    <strong>token</strong>: <%= user.spotify.token %><br>
+                    <strong>email</strong>: <%= user.spotify.email %><br>
+                    <strong>name</strong>: <%= user.spotify.name %><br>
+                </p>
+
+                <a href='/unlink/spotify' class='btn btn-primary'>Unlink</a>
+            <% } else { %>
+                <a href='/connect/spotify' class='btn btn-success'>Connect Spotify</a>
+
+            <% } %>
+        </div>
+    </div>
 
 </div>
 
