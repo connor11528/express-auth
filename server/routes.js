@@ -12,8 +12,18 @@ module.exports = function(app, passport){
 		res.render('signup.ejs', { message: req.flash('signupMessage') });
 	});
 
-	// app.post('/login', passport stuff)
-	// app.post('/signup', passport stuff)
+	app.post('/login', passport.authenticate('local-login', {
+		successRedirect: '/profile',
+		failureRedirect: '/login',
+		failureFlash: true
+	}));
+
+
+	app.post('/signup', passport.authenticate('local-signup', {
+		successRedirect: '/profile',  // could use a callback here (http://stackoverflow.com/questions/15711127/express-passport-node-js-error-handling)
+		failureRedirect: '/signup',
+		failureFlash: true
+	}));
 	
 	app.get('/profile', isLoggedIn, function(req, res){
 		res.render('profile.ejs', {

@@ -1,3 +1,23 @@
 <% layout('layout') -%>
 
-<h3>This is your profile</h3>
+<div class="page-header text-center">
+    <h1></span> Profile Page</h1>
+    <a href="/logout" class="btn btn-default btn-sm">Logout</a>
+</div>
+
+<div class="row">
+
+    <!-- LOCAL INFORMATION -->
+    <div class="col-sm-6">
+        <div class="well">
+            <h3>Local</h3>
+                <p>
+                    <strong>id</strong>: <%= user._id %><br>
+                    <strong>email</strong>: <%= user.local.email %><br>
+                    <strong>password</strong>: <%= user.local.password %>
+                </p>
+
+        </div>
+    </div>
+
+</div>

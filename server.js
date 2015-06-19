@@ -20,13 +20,13 @@ require('./config/passport')(passport);
 
 // express config
 app.use(cookieParser());
-app.use(bodyParser.json());
+app.use(bodyParser());
 
 app.engine('ejs', engine);
 app.set('view engine', 'ejs');
 
 // required for passport
-app.use(session({ secret: 'thisisverys3crett' }));
+app.use(session({ secret: 'thisisverys3crett', cookie: { maxAge: 60000 }, resave: true, saveUninitialized: true }));
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(flash());
