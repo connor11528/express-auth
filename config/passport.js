@@ -47,18 +47,52 @@ module.exports = function(passport) {
                 return done(null, false, req.flash('signupMessage', 'That email is already taken.')); // req.flash comes from connect-flash
             } else {
 
-				// if there is no user with that email create the user
-                var newUser = new User();
+                // check if they have signed in with facebook or spotify before
+                User.findOne({ 'facebook.email': email }, function(err, user){
+                    // has not logged in with facebook
+                    if (err || user === null){
+                        User.findOne({ 'spotify.email': email }, function(err, user){
+                            // has not logged in with spotify
+                            if (err || user === null){
 
-                newUser.local.email = email;
-                newUser.local.password = newUser.generateHash(password);
+                                // create a new user
+                                var newUser = new User();
+                                newUser.local.email = email;
+                                newUser.local.password = newUser.generateHash(password);
 
-				// save the user
-                newUser.save(function(err) {
-                    if (err)
-                        throw err;
-                    return done(null, newUser);
+                                // save the user
+                                newUser.save(function(err) {
+                                    if (err)
+                                        throw err;
+                                    return done(null, newUser);
+                                });
+                            } else {
+
+                                user.local.email = email;
+                                user.local.password = user.generateHash(password);
+
+                                user.save(function(err) {
+                                    if (err)
+                                        throw err;
+                                    return done(null, user);
+                                });
+                            }
+                            
+                        });
+                    } else {
+
+                        user.local.email = email;
+                        user.local.password = user.generateHash(password);
+
+                        user.save(function(err) {
+                            if (err)
+                                throw err;
+                            return done(null, user);
+                        });
+                    }
+
                 });
+
             }
 
         });    
@@ -77,8 +111,9 @@ module.exports = function(passport) {
             if (err){ return done(err); }
 
             // no user is found
-            if (!user)
-                return done(null, false, req.flash('loginMessage', 'No user found.'));
+            if (!user){
+                return done(null, false, req.flash('loginMessage', 'No user found. Maybe you logged in with Facebook or Spotify'));
+            }
 
 			// password is wrong (method from User model)
             if (!user.validPassword(password))
@@ -236,11 +271,6 @@ module.exports = function(passport) {
         }
 
     }));
-
-
-
-
-
 
 
 };

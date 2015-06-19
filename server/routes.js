@@ -1,3 +1,5 @@
+var User = require('./models/user');
+
 module.exports = function(app, passport){
 	
 	// local gets
@@ -24,6 +26,15 @@ module.exports = function(app, passport){
 		res.redirect('/');
 	});
 
+	app.get('/deleteAccount', function(req, res){
+
+		User.findOneAndRemove(req.user._id, function(err) {
+  			if (err) throw err;
+			res.redirect('/');
+		});
+
+	});
+
 	// local posts
 	app.post('/login', passport.authenticate('local-login', {
 		successRedirect: '/profile',
@@ -37,16 +48,6 @@ module.exports = function(app, passport){
 		failureRedirect: '/signup',
 		failureFlash: true
 	}));
-
-	// unlink local (should probably just delete account)
-    // app.get('/unlink/local', function(req, res) {
-    //     var user = req.user;
-    //     user.local.email = undefined;
-    //     user.local.password = undefined;
-    //     user.save(function(err) {
-    //         res.redirect('/profile');
-    //     });
-    // });
 
 	// Log in with Facebook
 	app.get('/auth/facebook', passport.authenticate('facebook', { scope: 'email' }));
