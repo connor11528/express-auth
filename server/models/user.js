@@ -13,6 +13,14 @@ var userSchema = mongoose.Schema({
         token: String,
         email: String,
         name: String
+    },
+    spotify: {
+        id: String,
+        username: String,
+        displayName: String,
+        email: String,
+        token: String,
+        name: String
     }
 });
 

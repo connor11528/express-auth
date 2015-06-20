@@ -1,5 +1,8 @@
+var User = require('./models/user');
+
 module.exports = function(app, passport){
 	
+	// local gets
 	app.get('/', function(req, res){
 		res.render('index.ejs');
 	});
@@ -12,6 +15,27 @@ module.exports = function(app, passport){
 		res.render('signup.ejs', { message: req.flash('signupMessage') });
 	});
 
+	app.get('/profile', isLoggedIn, function(req, res){
+		res.render('profile.ejs', {
+			user: req.user	// get user from session, pass to template
+		})
+	});
+
+	app.get('/logout', function(req, res){
+		req.logout();
+		res.redirect('/');
+	});
+
+	app.get('/deleteAccount', function(req, res){
+
+		User.findOneAndRemove(req.user._id, function(err) {
+  			if (err) throw err;
+			res.redirect('/');
+		});
+
+	});
+
+	// local posts
 	app.post('/login', passport.authenticate('local-login', {
 		successRedirect: '/profile',
 		failureRedirect: '/login',
@@ -24,17 +48,6 @@ module.exports = function(app, passport){
 		failureRedirect: '/signup',
 		failureFlash: true
 	}));
-	
-	app.get('/profile', isLoggedIn, function(req, res){
-		res.render('profile.ejs', {
-			user: req.user	// get user from session, pass to template
-		})
-	});
-
-	app.get('/logout', function(req, res){
-		req.logout();
-		res.redirect('/');
-	});
 
 	// Log in with Facebook
 	app.get('/auth/facebook', passport.authenticate('facebook', { scope: 'email' }));
@@ -62,11 +75,26 @@ module.exports = function(app, passport){
         });
     });
 
-	// unlink local
-    app.get('/unlink/local', function(req, res) {
+
+    // Log in with Spotify
+    app.get('/auth/spotify', passport.authenticate('spotify', {scope: ['user-read-email', 'user-read-private'] }));
+
+    app.get('/auth/spotify/callback',
+		passport.authenticate('spotify', {
+			successRedirect: '/profile',
+			failureRedirect: '/'
+		}));
+
+    app.get('/connect/spotify', passport.authorize('spotify', {scope: ['user-read-email', 'user-read-private'] }));
+
+	app.get('/connect/spotify/callback', passport.authorize('spotify', {
+		successRedirect: '/profile',
+		failureRedirect: '/'
+	}));
+
+	app.get('/unlink/spotify', function(req, res) {
         var user = req.user;
-        user.local.email = undefined;
-        user.local.password = undefined;
+        user.spotify.token = undefined;
         user.save(function(err) {
             res.redirect('/profile');
         });

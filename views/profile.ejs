@@ -3,6 +3,8 @@
 <div class="page-header text-center">
     <h1></span> Profile Page</h1>
     <a href="/logout" class="btn btn-default btn-sm">Logout</a>
+
+    <a href='/deleteAccount' class='btn btn-danger btn-sm'>Delete my account</a>
 </div>
 
 <div class="row">
@@ -17,8 +19,6 @@
                         <strong>email</strong>: <%= user.local.email %><br>
                         <strong>password</strong>: <%= user.local.password %>
                     </p>
-
-                    <a href="/unlink/local" class="btn btn-default">Unlink</a>
                 <% } else { %>
                    <p>No local account</p>
                 <% } %>
@@ -43,12 +43,31 @@
             <% } %>
         </div>
     </div>
+    <div class='col-sm-6'>
+        <div class='well'>
+            <h3 class='text-success'>Spotify</h3>
+
+            <% if(user.spotify.token){ %>
+                <p>
+                    <strong>id</strong>: <%= user.spotify.id %><br>
+                    <strong>token</strong>: <%= user.spotify.token %><br>
+                    <strong>email</strong>: <%= user.spotify.email %><br>
+                    <strong>name</strong>: <%= user.spotify.name %><br>
+                </p>
+
+                <a href='/unlink/spotify' class='btn btn-success'>Unlink</a>
+            <% } else { %>
+                <a href='/connect/spotify' class='btn btn-success'>Connect Spotify</a>
+
+            <% } %>
+        </div>
+    </div>
 
 </div>
 
 
 
-
+<pre><%= user %></pre>
 
 
 

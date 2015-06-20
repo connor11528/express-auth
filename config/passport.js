@@ -1,6 +1,7 @@
 
 var LocalStrategy = require('passport-local').Strategy;
 var FacebookStrategy = require('passport-facebook').Strategy;
+var SpotifyStrategy = require('passport-spotify').Strategy;
 var User = require('../server/models/user');
 
 var configAuth = require('./auth');
@@ -46,18 +47,52 @@ module.exports = function(passport) {
                 return done(null, false, req.flash('signupMessage', 'That email is already taken.')); // req.flash comes from connect-flash
             } else {
 
-				// if there is no user with that email create the user
-                var newUser = new User();
+                // check if they have signed in with facebook or spotify before
+                User.findOne({ 'facebook.email': email }, function(err, user){
+                    // has not logged in with facebook
+                    if (err || user === null){
+                        User.findOne({ 'spotify.email': email }, function(err, user){
+                            // has not logged in with spotify
+                            if (err || user === null){
 
-                newUser.local.email = email;
-                newUser.local.password = newUser.generateHash(password);
+                                // create a new user
+                                var newUser = new User();
+                                newUser.local.email = email;
+                                newUser.local.password = newUser.generateHash(password);
 
-				// save the user
-                newUser.save(function(err) {
-                    if (err)
-                        throw err;
-                    return done(null, newUser);
+                                // save the user
+                                newUser.save(function(err) {
+                                    if (err)
+                                        throw err;
+                                    return done(null, newUser);
+                                });
+                            } else {
+
+                                user.local.email = email;
+                                user.local.password = user.generateHash(password);
+
+                                user.save(function(err) {
+                                    if (err)
+                                        throw err;
+                                    return done(null, user);
+                                });
+                            }
+                            
+                        });
+                    } else {
+
+                        user.local.email = email;
+                        user.local.password = user.generateHash(password);
+
+                        user.save(function(err) {
+                            if (err)
+                                throw err;
+                            return done(null, user);
+                        });
+                    }
+
                 });
+
             }
 
         });    
@@ -76,8 +111,9 @@ module.exports = function(passport) {
             if (err){ return done(err); }
 
             // no user is found
-            if (!user)
-                return done(null, false, req.flash('loginMessage', 'No user found.'));
+            if (!user){
+                return done(null, false, req.flash('loginMessage', 'No user found. Maybe you logged in with Facebook or Spotify'));
+            }
 
 			// password is wrong (method from User model)
             if (!user.validPassword(password))
@@ -124,22 +160,43 @@ module.exports = function(passport) {
                     }
                     
                 } else {
-                    // if no user found create them
-                    var newUser = new User();
 
-                    console.log('creating a new user')
-
-                    newUser.facebook.id = profile.id;
-                    newUser.facebook.token = token;
-                    newUser.facebook.name = profile.name.givenName + ' ' + profile.name.familyName;
-                    newUser.facebook.email = profile.emails[0].value;
-
-                    newUser.save(function(err){
+                    // is there an associated spotify account?
+                    User.findOne({ 'spotify.email': profile.emails[0].value }, function(err, user){
                         if(err) throw err;
 
-                        // success, return the newUser
-                        return done(null, newUser);
+                        if(user === null){
+                            // create a new account
+                            var newUser = new User();
+
+                            newUser.facebook.id = profile.id;
+                            newUser.facebook.token = token;
+                            newUser.facebook.name = profile.name.givenName + ' ' + profile.name.familyName;
+                            newUser.facebook.email = profile.emails[0].value;
+
+                            newUser.save(function(err){
+                                if(err) throw err;
+
+                                return done(null, newUser);
+                            });
+
+                        } else {
+                            // associate facebook credentials with the spotify creds
+                            var user = req.user;
+
+                            user.facebook.id = profile.id;
+                            user.facebook.token = token;
+                            user.facebook.name = profile.name.givenName + ' ' + profile.name.familyName;
+                            user.facebook.email = profile.emails[0].value;
+
+                            user.save(function(err){
+                                if(err) throw err;
+
+                                return done(null, user);
+                            });
+                        }
                     });
+
                 }
             });
         } else {
@@ -155,18 +212,111 @@ module.exports = function(passport) {
                 if(err) throw err;
 
                 return done(null, user);
-            })
+            });
         }
-    }))
+    }));
+
+    
+    // Spotify
+    passport.use(new SpotifyStrategy({
+        clientID: configAuth.spotifyAuth.clientID,
+        clientSecret: configAuth.spotifyAuth.clientSecret,
+        callbackURL: configAuth.spotifyAuth.callbackURL,
+        passReqToCallback: true
+    }, function(req, token, refreshToken, profile, done) {
+        var spotify_email = profile.emails[0].value;
+
+        // user is not logged in
+        if(!req.user){
+            User.findOne({ 'spotify.id': profile.id }, function(err, user){
+                if(err) return done(err);
+
+                
+                if(user){
+                    // previously unlinked their spotify,
+                    // now they want to log in with spotify again
+                    // readd their credentials
+                    if (!user.spotify.token) {
+
+                        user.spotify.id = profile.id;
+                        user.spotify.token = token;
+                        user.spotify.name  = profile.displayName;
+                        user.spotify.username = profile.username;
+                        user.spotify.email = profile.emails[0].value;
+
+                        user.save(function(err) {
+                            if (err)
+                                throw err;
+                            return done(null, user);
+                        });
+                    } else {
+
+                        // user found, return that user
+                        return done(null, user);
+                    }
+
+                } else {
+
+                    // is there an associated facebook account?
+                    User.findOne({'facebook.email': profile.emails[0].value }, function(err, user){
+                        if(err) throw err;
+
+                        if(user === null){
+                            // first time logging in, create new User
+                            var newUser = new User();
+
+                            newUser.spotify.id = profile.id;
+                            newUser.spotify.token = token;
+                            newUser.spotify.name  = profile.displayName;
+                            newUser.spotify.username = profile.username;
+                            newUser.spotify.email = profile.emails[0].value;
+
+                            newUser.save(function(err){
+                                if(err) throw err;
+                                return done(null, newUser);
+                            });
+
+                        } else {
+                            // associate with the facebook login
+                            console.log('associate with the facebook login');
+                            console.log(user);
+
+                            user.spotify.id = profile.id;
+                            user.spotify.token = token;
+                            user.spotify.name  = profile.displayName;
+                            user.spotify.username = profile.username;
+                            user.spotify.email = profile.emails[0].value;
+
+                            user.save(function(err){
+                                if(err) throw err;
+                                return done(null, user);
+                            });
+                        }
+                    });
+                }
+
+            });
+
+        } else {
+            // user already exists and is logged in (link accounts)
+            var user = req.user;
+
+            user.spotify.id = profile.id;
+            user.spotify.token = token;
+            user.spotify.name  = profile.displayName;
+            user.spotify.username = profile.username;
+            user.spotify.email = profile.emails[0].value;
 
 
+            user.save(function(err){
+                if(err) throw err;
 
+                return done(null, user);
+            });
 
+        }
 
-
-
-
-
+    }));
 
 
 };
