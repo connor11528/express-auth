@@ -160,20 +160,43 @@ module.exports = function(passport) {
                     }
                     
                 } else {
-                    // if no user found create them
-                    var newUser = new User();
 
-                    newUser.facebook.id = profile.id;
-                    newUser.facebook.token = token;
-                    newUser.facebook.name = profile.name.givenName + ' ' + profile.name.familyName;
-                    newUser.facebook.email = profile.emails[0].value;
-
-                    newUser.save(function(err){
+                    // is there an associated spotify account?
+                    User.findOne({ 'spotify.email': profile.emails[0].value }, function(err, user){
                         if(err) throw err;
 
-                        // success, return the newUser
-                        return done(null, newUser);
+                        if(user === null){
+                            // create a new account
+                            var newUser = new User();
+
+                            newUser.facebook.id = profile.id;
+                            newUser.facebook.token = token;
+                            newUser.facebook.name = profile.name.givenName + ' ' + profile.name.familyName;
+                            newUser.facebook.email = profile.emails[0].value;
+
+                            newUser.save(function(err){
+                                if(err) throw err;
+
+                                return done(null, newUser);
+                            });
+
+                        } else {
+                            // associate facebook credentials with the spotify creds
+                            var user = req.user;
+
+                            user.facebook.id = profile.id;
+                            user.facebook.token = token;
+                            user.facebook.name = profile.name.givenName + ' ' + profile.name.familyName;
+                            user.facebook.email = profile.emails[0].value;
+
+                            user.save(function(err){
+                                if(err) throw err;
+
+                                return done(null, user);
+                            });
+                        }
                     });
+
                 }
             });
         } else {
@@ -201,6 +224,7 @@ module.exports = function(passport) {
         callbackURL: configAuth.spotifyAuth.callbackURL,
         passReqToCallback: true
     }, function(req, token, refreshToken, profile, done) {
+        var spotify_email = profile.emails[0].value;
 
         // user is not logged in
         if(!req.user){
@@ -232,21 +256,43 @@ module.exports = function(passport) {
                     }
 
                 } else {
-                    // first time logging in, create new User
-                    var newUser = new User();
 
-                    newUser.spotify.id = profile.id;
-                    newUser.spotify.token = token;
-                    newUser.spotify.name  = profile.displayName;
-                    newUser.spotify.username = profile.username;
-                    newUser.spotify.email = profile.emails[0].value;
-
-                    newUser.save(function(err){
+                    // is there an associated facebook account?
+                    User.findOne({'facebook.email': profile.emails[0].value }, function(err, user){
                         if(err) throw err;
 
-                        return done(null, newUser);
-                    });
+                        if(user === null){
+                            // first time logging in, create new User
+                            var newUser = new User();
 
+                            newUser.spotify.id = profile.id;
+                            newUser.spotify.token = token;
+                            newUser.spotify.name  = profile.displayName;
+                            newUser.spotify.username = profile.username;
+                            newUser.spotify.email = profile.emails[0].value;
+
+                            newUser.save(function(err){
+                                if(err) throw err;
+                                return done(null, newUser);
+                            });
+
+                        } else {
+                            // associate with the facebook login
+                            console.log('associate with the facebook login');
+                            console.log(user);
+
+                            user.spotify.id = profile.id;
+                            user.spotify.token = token;
+                            user.spotify.name  = profile.displayName;
+                            user.spotify.username = profile.username;
+                            user.spotify.email = profile.emails[0].value;
+
+                            user.save(function(err){
+                                if(err) throw err;
+                                return done(null, user);
+                            });
+                        }
+                    });
                 }
 
             });
