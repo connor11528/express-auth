@@ -11,8 +11,6 @@ pids
 logs
 results
 
-config/auth.js
-
 node_modules
 npm-debug.log
 
